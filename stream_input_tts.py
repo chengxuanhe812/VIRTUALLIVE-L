@@ -388,19 +388,19 @@ class NlsStreamInputTtsSynthesizer:
         logging.debug("start with request: {}".format(request))
         self.__nls.start(request, ping_interval=0, ping_timeout=None)
         self.state.set(NlsStreamInputTtsStatus.Start)
-        if not self.start_sended.wait(timeout=10):
+        if not self.start_sended.wait(timeout=5):
             logging.debug("syn start timeout")
-            raise StartTimeoutException(f"Waiting Connection before Start over 10s")
+            raise StartTimeoutException(f"Waiting Connection before Start over 5s")
 
         if last_state != NlsStreamInputTtsStatus.Begin:
             logging.debug("start with wrong state {}".format(last_state))
             self.state.set(NlsStreamInputTtsStatus.Failed)
             raise WrongStateException("start with wrong state {}".format(last_state))
 
-        if not self.started_event.wait(timeout=10):
+        if not self.started_event.wait(timeout=5):
             logging.debug("syn started timeout")
             self.state.set(NlsStreamInputTtsStatus.Failed)
-            raise StartTimeoutException(f"Waiting Started over 10s")
+            raise StartTimeoutException(f"Waiting Started over 5s")
         self.state.set(NlsStreamInputTtsStatus.Started)
 
     def sendStreamInputTts(self, text):

@@ -5,18 +5,19 @@ import time
 import sys
 import io
 from datetime import datetime
-from copy_VoiceTTS import process_tts, get_token
+from cosyVoiceTTS import process_tts, get_token
 import sounddevice as sd
 import soundfile as sf
 import pygame
 import queue
 import importlib
 import numpy as np
-from getusercomment_01 import start_comment_monitoring, stop_comment_monitoring
+from getusercomment import start_comment_monitoring, stop_comment_monitoring
 from getResponseFromQianwen import process_live_comment
 from dotenv import load_dotenv
 import struct
 
+# https://live.douyin.com/769032284842
 class StoryPlayer:
     def __init__(self):
         # 强制重新加载环境变量
@@ -69,9 +70,9 @@ class StoryPlayer:
                     print("检测到暂停事件，等待当前音频播放完成...")
                     # 等待当前音频播放完成
                     while pygame.mixer.get_busy():
-                        await asyncio.sleep(0.1)
+                        await asyncio.sleep(0.05)
                     break
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.05)
             
             # 清理临时文件
             try:
@@ -196,6 +197,10 @@ class StoryPlayer:
                     self.story_paused.set()
                     asyncio.create_task(self.process_comment_cache())
     
+    def handle_welcome(self,username):
+        # """处理用户进入直播间的欢迎消息"""
+        return f"欢迎{username}来到直播间，天天开心喔"
+    
     async def process_interaction(self, username, comment_text, comment_type="评论"):
         """处理用户互动"""
         # 使用锁确保同一时间只处理一个互动
@@ -204,42 +209,46 @@ class StoryPlayer:
             self.is_processing_interaction = True
             
             try:
-                # 使用千问AI生成回复
-                system_prompt = "你是一个友好、幽默的直播助手，负责回答直播间观众的问题和评论。回复要简洁、有趣，不超过50个字。"
-                if comment_type == "礼物":
-                    system_prompt += "这是一个礼物，请表达感谢。"
-                
-                response = process_live_comment(f"{username}: {comment_text}", system_prompt)
-                
-                # 只打印评论原文和回复信息
-                print(f"回复评论 - {username}: {comment_text} -> {response}")
-                
-                # 获取token，如果全局token不可用则重新获取
-                token = self.global_token
-                if not token:
-                    token = get_token()
-                    if token:
-                        # 如果成功获取了新token，更新全局token
-                        self.global_token = token
-                
-                if not token:
-                    print("无法获取语音token，跳过语音生成")
-                    return
-                
-                # 使用TTS生成语音数据
-                audio_data = process_tts(
-                    token,
-                    [response],
-                    story_title=f"回复{username}",
-                    sentence_number=1,
-                    total_sentences=1
-                )
-                
-                # 播放语音回复
-                if audio_data:
-                    await self.play_audio(audio_data)
-                else:
-                    print(f"警告: 语音数据生成失败")
+                # 检查是否是"来了"的评论
+                if comment_text == "来了":
+                    response = self.handle_welcome(username)
+                else:               
+                    # 使用千问AI生成回复
+                    system_prompt = "你是一个友好、幽默的直播助手，负责回答直播间观众的问题和评论。回复要简洁、有趣，不超过50个字。"
+                    if comment_type == "礼物":
+                        system_prompt += "这是一个礼物，请表达感谢。"
+                    
+                    response = process_live_comment(f"{username}: {comment_text}", system_prompt)
+                    
+                    # 只打印评论原文和回复信息
+                    print(f"回复评论 - {username}: {comment_text} -> {response}")
+                    
+                    # 获取token，如果全局token不可用则重新获取
+                    token = self.global_token
+                    if not token:
+                        token = get_token()
+                        if token:
+                            # 如果成功获取了新token，更新全局token
+                            self.global_token = token
+                    
+                    if not token:
+                        print("无法获取语音token，跳过语音生成")
+                        return
+                    
+                    # 使用TTS生成语音数据
+                    audio_data = process_tts(
+                        token,
+                        [response],
+                        story_title=f"回复{username}",
+                        sentence_number=1,
+                        total_sentences=1
+                    )
+                    
+                    # 播放语音回复
+                    if audio_data:
+                        await self.play_audio(audio_data)
+                    else:
+                        print(f"警告: 语音数据生成失败")
                 
             except Exception as e:
                 print(f"处理互动时出错: {str(e)}")

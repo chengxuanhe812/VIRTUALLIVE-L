@@ -62,6 +62,13 @@ def parse_comment(comment):
         if '\n' in comment:
             comment = comment.split('\n')[0].strip()
         
+        # 检查是否包含"来了"关键词
+        if '来了' in comment:
+            # 尝试提取用户名（用户名来了）
+            username = comment.replace('来了', '').strip()
+            if username:
+                return username, "来了"
+        
         # 尝试多种分隔符
         separators = [':', '：']
         for sep in separators:
@@ -134,85 +141,115 @@ def _initialize_browser():
     try:
         # 配置Chrome浏览器选项
         chrome_options = Options()
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-        chrome_options.add_argument("--log-level=3")
-        chrome_options.add_argument("--disable-logging")
-        chrome_options.add_argument("--silent")
-        chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
-        chrome_options.add_argument(
-             "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36")
-
         
-        # 添加代理设置（如果需要）
-        # chrome_options.add_argument('--proxy-server=http://your-proxy-address:port')
+        # 添加无痕模式
+        chrome_options.add_argument("--incognito")
+        
+        # 基本设置
+        chrome_options.add_argument('--disable-web-security')  # 禁用网页安全性检查
+        chrome_options.add_argument('--allow-running-insecure-content')  # 允许不安全内容
+        chrome_options.add_argument('--disable-blink-features=AutomationControlled')  # 禁用自动化控制特征
+        chrome_options.add_argument('--disable-infobars')  # 禁用信息栏
+        chrome_options.add_argument('--disable-notifications')  # 禁用通知
+        chrome_options.add_argument('--disable-popup-blocking')  # 禁用弹出窗口阻止
+        chrome_options.add_argument('--disable-save-password-bubble')  # 禁用保存密码提示
+        chrome_options.add_argument('--disable-translate')  # 禁用翻译
+        chrome_options.add_argument('--no-default-browser-check')  # 禁用默认浏览器检查
+        chrome_options.add_argument('--no-first-run')  # 禁用首次运行设置
+        
+        # 添加性能优化选项
+        chrome_options.add_argument('--disable-gpu')  # 禁用GPU加速
+        chrome_options.add_argument('--no-sandbox')  # 禁用沙箱模式
+        chrome_options.add_argument('--disable-dev-shm-usage')  # 禁用/dev/shm使用
+        chrome_options.add_argument('--disable-software-rasterizer')  # 禁用软件光栅化
+        chrome_options.add_argument('--disable-extensions')  # 禁用扩展
+        chrome_options.add_argument('--disable-default-apps')  # 禁用默认应用
+        chrome_options.add_argument('--disable-sync')  # 禁用同步
+        chrome_options.add_argument('--disable-background-networking')  # 禁用后台网络
+        chrome_options.add_argument('--disable-background-timer-throttling')  # 禁用后台计时器限制
+        chrome_options.add_argument('--disable-backgrounding-occluded-windows')  # 禁用后台窗口遮挡
+        chrome_options.add_argument('--disable-breakpad')  # 禁用崩溃报告
+        chrome_options.add_argument('--disable-component-extensions-with-background-pages')  # 禁用带后台页面的组件扩展
+        chrome_options.add_argument('--disable-features=TranslateUI,BlinkGenPropertyTrees')  # 禁用特定功能
+        chrome_options.add_argument('--disable-ipc-flooding-protection')  # 禁用IPC洪水保护
+        chrome_options.add_argument('--disable-renderer-backgrounding')  # 禁用渲染器后台处理
+        chrome_options.add_argument('--enable-features=NetworkService,NetworkServiceInProcess')  # 启用网络服务
+        chrome_options.add_argument('--metrics-recording-only')  # 仅记录指标
+        chrome_options.add_argument('--no-pings')  # 禁用ping
+        chrome_options.add_argument('--window-size=1920,1080')  # 设置窗口大小
+        
+        # 设置随机User-Agent
+        user_agents = [
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        ]
+        chrome_options.add_argument(f"user-agent={random.choice(user_agents)}")
         
         # 添加网络相关设置
         chrome_options.add_argument('--dns-prefetch-disable')  # 禁用DNS预读取
-        chrome_options.add_argument('--disable-web-security')  # 禁用网页安全性检查
-        chrome_options.add_argument('--allow-running-insecure-content')  # 允许不安全内容
-        
         
         # 初始化浏览器驱动
         print("正在初始化Chrome浏览器...")
         try:
-            # 使用webdriver_manager自动下载和管理ChromeDriver
-            service = Service(ChromeDriverManager().install())
+            # 使用本地ChromeDriver
+            driver_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chromedriver.exe")
+            if not os.path.exists(driver_path):
+                print(f"错误: ChromeDriver不存在于路径: {driver_path}")
+                return None
+                
+            service = Service(driver_path)
             _driver = webdriver.Chrome(service=service, options=chrome_options)
             
             # 设置页面加载超时
             _driver.set_page_load_timeout(30)
             _driver.set_script_timeout(30)
             
+            # 使用CDP命令修改navigator.webdriver标志
+            _driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+                'source': '''
+                    Object.defineProperty(navigator, 'webdriver', {
+                        get: () => undefined
+                    });
+                    
+                    // 修改navigator属性
+                    const originalQuery = window.navigator.permissions.query;
+                    window.navigator.permissions.query = (parameters) => (
+                        parameters.name === 'notifications' ?
+                            Promise.resolve({ state: Notification.permission }) :
+                            originalQuery(parameters)
+                    );
+                    
+                    // 添加语言和平台
+                    Object.defineProperty(navigator, 'languages', {
+                        get: () => ['zh-CN', 'zh', 'en'],
+                    });
+                    
+                    // 添加插件
+                    Object.defineProperty(navigator, 'plugins', {
+                        get: () => [1, 2, 3, 4, 5],
+                    });
+                '''
+            })
+            
             # 测试网络连接
             print("测试网络连接...")
             try:
                 _driver.get("https://www.baidu.com")
                 print("网络连接测试成功")
+                print("Chrome浏览器初始化成功")
+                return _driver
             except Exception as e:
                 print(f"网络连接测试失败: {str(e)}")
                 print("请检查网络连接或代理设置")
                 return None
-            
-            print("Chrome浏览器初始化成功")
-            return _driver
-            
+                
         except Exception as e:
-            print(f"使用webdriver_manager初始化失败: {str(e)}")
-            print("尝试使用本地驱动...")
-            try:
-                # 尝试使用本地驱动
-                driver_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "chromedriver.exe")
-                if os.path.exists(driver_path):
-                    service = Service(driver_path)
-                    _driver = webdriver.Chrome(service=service, options=chrome_options)
-                    
-                    # 设置页面加载超时
-                    _driver.set_page_load_timeout(30)
-                    _driver.set_script_timeout(30)
-                    
-                    # 测试网络连接
-                    print("测试网络连接...")
-                    try:
-                        _driver.get("https://www.baidu.com")
-                        print("网络连接测试成功")
-                    except Exception as e:
-                        print(f"网络连接测试失败: {str(e)}")
-                        print("请检查网络连接或代理设置")
-                        return None
-                    
-                    print("使用本地驱动初始化成功")
-                    return _driver
-                else:
-                    print("本地驱动不存在，请下载适合您Chrome版本的驱动并放置在项目目录")
-                    print("您可以从 https://googlechromelabs.github.io/chrome-for-testing/ 下载驱动")
-                    return None
-            except Exception as e2:
-                print(f"使用本地驱动初始化失败: {str(e2)}")
-                return None
-        
+            print(f"初始化Chrome浏览器失败: {str(e)}")
+            return None
+            
     except Exception as e:
         print(f"初始化浏览器时出错: {str(e)}")
         return None
@@ -274,7 +311,7 @@ def _monitor_comments():
                             _driver.get(last_url)
                             time.sleep(5)
                         except:
-                            print("重新访问失败，尝试重新初始化浏览器...")
+                            print("刷新页面失败，尝试重新初始化浏览器...")
                             _driver.quit()
                             _driver = None
                             continue
@@ -295,7 +332,6 @@ def _monitor_comments():
                 if "invalid session id" in str(e):
                     print("浏览器会话已失效，需要重新初始化...")
                     _driver = None
-                    
                 print("尝试重新加载页面...")
                 try:
                     _driver.refresh()
