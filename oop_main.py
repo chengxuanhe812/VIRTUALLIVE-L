@@ -15,6 +15,7 @@ import numpy as np
 from getusercomment_01 import start_comment_monitoring, stop_comment_monitoring
 from getResponseFromQianwen import process_live_comment
 from dotenv import load_dotenv
+import struct
 
 class StoryPlayer:
     def __init__(self):
@@ -49,6 +50,9 @@ class StoryPlayer:
     async def play_audio(self, audio_data):
         """异步播放音频数据"""
         try:
+            # 添加WAV文件头（如果需要）
+            audio_data = self.add_wav_header_if_needed(audio_data)
+            
             # 创建临时文件
             temp_file = "temp_audio.wav"
             with open(temp_file, "wb") as f:
@@ -96,6 +100,54 @@ class StoryPlayer:
                 print(f"备用播放方法也失败: {str(e2)}")
                 print("音频播放失败，请检查系统音频设备")
                 # 音频播放失败时，不设置sentence_completed事件
+    
+    def add_wav_header_if_needed(self, audio_data, sample_rate=24000, channels=1, bits_per_sample=16):
+        """
+        检查音频数据是否包含WAV文件头，如果没有则添加
+        
+        Args:
+            audio_data (bytes): 原始音频数据
+            sample_rate (int): 采样率，默认24000Hz
+            channels (int): 通道数，默认1（单声道）
+            bits_per_sample (int): 位深度，默认16位
+            
+        Returns:
+            bytes: 包含WAV文件头的音频数据
+        """
+        # 检查是否已经有WAV文件头
+        if len(audio_data) > 44 and audio_data[:4] == b'RIFF' and audio_data[8:12] == b'WAVE':
+            print("音频数据已包含WAV文件头")
+            return audio_data
+        
+        print("音频数据不包含WAV文件头，正在添加...")
+        
+        # 计算数据大小
+        data_size = len(audio_data)
+        
+        # 创建WAV文件头
+        header = bytearray()
+        
+        # RIFF头
+        header.extend(b'RIFF')
+        header.extend(struct.pack('<I', 36 + data_size))  # 文件总大小
+        header.extend(b'WAVE')
+        
+        # fmt子块
+        header.extend(b'fmt ')
+        header.extend(struct.pack('<I', 16))  # fmt子块大小
+        header.extend(struct.pack('<H', 1))   # 音频格式，1表示PCM
+        header.extend(struct.pack('<H', channels))  # 通道数
+        header.extend(struct.pack('<I', sample_rate))  # 采样率
+        header.extend(struct.pack('<I', sample_rate * channels * bits_per_sample // 8))  # 字节率
+        header.extend(struct.pack('<H', channels * bits_per_sample // 8))  # 块对齐
+        header.extend(struct.pack('<H', bits_per_sample))  # 位深度
+        
+        # data子块
+        header.extend(b'data')
+        header.extend(struct.pack('<I', data_size))  # 数据大小
+        
+        # 合并文件头和音频数据
+        return header + audio_data
     
     def load_story_files(self, folder_path):
         """从文件夹中读取所有故事文本文件"""

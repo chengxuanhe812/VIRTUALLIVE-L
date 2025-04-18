@@ -21,16 +21,21 @@ import json
 from aliyunsdkcore.client import AcsClient
 from aliyunsdkcore.request import CommonRequest
 from dotenv import load_dotenv
+import inspect
 
 # 加载环境变量文件中的配置
 load_dotenv(override=True)
 
 # 将音频保存进文件
-SAVE_TO_FILE = True
+SAVE_TO_FILE = False
 # 将音频通过播放器实时播放，需要具有声卡。在服务器上运行请将此开关关闭
 PLAY_REALTIME_RESULT = True
 if PLAY_REALTIME_RESULT:
     import pyaudio
+
+# 使用克隆语音ID
+# 使用最新创建的语音模型ID
+VOICE_ID = "cosyvoice-v2-mysound05-bba7f0e"
 
 def get_token():
     """获取阿里云语音合成服务的访问Token"""
@@ -152,11 +157,7 @@ def process_tts(token, test_text, story_title=None, sentence_number=None, total_
         if not appkey:
             print("错误：未找到ALIYUN_APPKEY环境变量")
             return None
-
-        # 使用克隆语音ID
-        # 使用最新创建的语音模型ID
-        voice_id = "cosyvoice-mysound01-85804c0"
-        
+      
         # 初始化语音合成SDK
         sdk = NlsStreamInputTtsSynthesizer(
             # 由于目前阶段大模型音色只在北京地区服务可用，因此需要调整url到北京
@@ -171,7 +172,7 @@ def process_tts(token, test_text, story_title=None, sentence_number=None, total_
 
         # 开始语音合成，设置参数
         sdk.startStreamInputTts(
-            voice=voice_id,             # 使用克隆的语音ID
+            voice=VOICE_ID,             # 使用克隆的语音ID
             aformat="wav",               # 音频格式
             sample_rate=24000,           # 采样率
             volume=50,                   # 音量，范围0-100
@@ -215,14 +216,6 @@ test_text = [
     "合成为语音二进制数据，",
     "相比于非流式语音合成，",
     "流式合成的优势在于实时性",
-    "更强。用户在输入文本的同时",
-    "可以听到接近同步的语音输出，",
-    "极大地提升了交互体验，",
-    "减少了用户等待时间。",
-    "适用于调用大规模",
-    "语言模型（LLM），以",
-    "流式输入文本的方式",
-    "进行语音合成的场景。",
 ]
 
 if __name__ == "__main__":
@@ -276,7 +269,7 @@ if __name__ == "__main__":
     
     # 开始合成
     sdk.startStreamInputTts(
-        voice="cosyvoice-mysound01-85804c0",                   # 语音合成说话人
+        voice=VOICE_ID,                                          # 语音合成说话人
         aformat="wav",                                          # 合成音频格式
         sample_rate=24000,                                      # 合成音频采样率
         volume=50,                                              # 合成音频的音量

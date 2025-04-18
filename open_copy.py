@@ -99,8 +99,8 @@ if __name__ == "__main__":
     # 用户信息
     access_key_id = os.getenv('ALIYUN_AK_ID')
     access_key_secret = os.getenv('ALIYUN_AK_SECRET')
-    voice_prefix = 'mysound01'  # 修改为只包含英文字母和数字
-    audio_url = 'https://my-sound01.oss-cn-shanghai.aliyuncs.com/audio/soundsample01.wav'
+    voice_prefix = 'mysound02'  # 修改为只包含英文字母和数字
+    audio_url = 'https://my-sound01.oss-cn-shanghai.aliyuncs.com/audio/soundsample02.wav'
 
     CosyClone.cosy_clone(access_key_id, access_key_secret, voice_prefix, audio_url)
     CosyClone.cosy_list(access_key_id, access_key_secret, voice_prefix)
@@ -117,8 +117,8 @@ bucket = oss2.Bucket(auth, endpoint, bucket_name)
 # 上传文件
 # local_file是您本地音频文件的路径
 # object_name是上传到OSS后的文件名
-local_file = r'C:\Users\86181\Videos\Captures\soundsample01.wav'
-object_name = 'audio/soundsample01.wav'
+local_file = r'C:\Users\86181\Videos\Captures\soundsample02.wav'   #修改为本地音频文件路径
+object_name = 'audio/soundsample02.wav'                            #修改为上传到OSS后的文件名
 
 # 上传文件
 bucket.put_object_from_file(object_name, local_file)

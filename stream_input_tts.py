@@ -36,7 +36,8 @@ __STREAM_INPUT_TTS_REQUEST_NAME__ = {
     "task_failed": "TaskFailed",
 }
 
-__URL__ = "wss://nls-gateway.cn-shanghai.aliyuncs.com/ws/v1"
+__URL__ = "wss://nls-gateway-cn-beijing.aliyuncs.com/ws/v1"
+
 
 __all__ = ["NlsStreamInputTtsSynthesizer"]
 
@@ -322,7 +323,7 @@ class NlsStreamInputTtsSynthesizer:
 
     def startStreamInputTts(
         self,
-        voice="longxiaochun",
+        voice="cosyvoice-v2-mysound01-d63d9dc",
         aformat="pcm",
         sample_rate=24000,
         volume=50,
